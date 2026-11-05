@@ -18,20 +18,16 @@ from logger import RunLogger
 
 warnings.filterwarnings("ignore")
 
-def run_training(env, agent, total_steps, outdir, logger):
+def run_training(env, agent, total_steps, outdir, logger, seed):
     obs = env.reset()
     done = False
     episode_reward = 0
     episodes_completed = 0
 
     # Using tqdm for a nice progress bar
-    progress_bar = tqdm.tqdm(total=total_steps, desc="Training")
-
+    progress_bar = tqdm.tqdm(total=total_steps, desc=f"Training Seed {seed}")
+    process = psutil.Process(os.getpid())
     for step in range(int(total_steps)):
-        if step % 1000 == 0:
-            process = psutil.Process(os.getpid())
-            ram_mb = process.memory_info().rss / (1024 * 1024)
-            print(f"Step {step} | Python RAM Usage: {ram_mb:.2f} MB")
 
         action = agent.act(obs, training=True)
 
@@ -50,11 +46,12 @@ def run_training(env, agent, total_steps, outdir, logger):
                 reward=episode_reward, 
                 epsilon=getattr(agent, "epsilon", 1.0) 
             )
-            
+            ram_mb = process.memory_info().rss / (1024 * 1024)
             progress_bar.set_postfix({
                 'Ep': episodes_completed, 
                 'Rew': f"{episode_reward:.1f}", 
-                'Eps': f"{getattr(agent, 'epsilon', 1.0):.3f}"
+                'Eps': f"{getattr(agent, 'epsilon', 1.0):.3f}",
+                'RAM': f"{ram_mb:.0f}MB"
             })
             
             obs = env.reset()
@@ -105,8 +102,9 @@ if __name__ == "__main__":
     
     model = NatureCNN
     agent = RBDQNAgent(config, model, env.action_space, channels=3)
+    print(f"Using torch {agent.device}")
 
     print(f"Starting training for {args.steps} steps...")
-    run_training(env, agent, args.steps, outdir, logger)
+    run_training(env, agent, args.steps, outdir, logger, args.seed)
     
     env.close()
