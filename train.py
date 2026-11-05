@@ -13,7 +13,7 @@ import os
 from dqn_agent import DQNAgent
 from buffered_dqn_agent import RBDQNAgent
 from ddqn_agent import DDQNAgent
-from models import ClassicCNN, NatureCNN, ImpalaCNN
+from models import ClassicCNN, DuelingImpalaCNN, DuelingNatureCNN, NatureCNN, ImpalaCNN, DuelingClassicCNN
 from config import DQNConfig
 from logger import RunLogger
 
@@ -76,7 +76,10 @@ def run_training(env, agent, total_steps, outdir, logger, seed):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--exp_name', type=str, default='default_run', help='Name of the experiment')
-    parser.add_argument('--model', type=str, default='nature', choices=['classic', 'nature', 'impala'])
+    parser.add_argument('--model', 
+                        type=str, 
+                        default='nature', 
+                        choices=['classic', 'nature', 'impala', 'dueling_classic', 'dueling_nature', 'dueling_impala'])
     parser.add_argument('--agent', type=str, default='dqn', choices=['dqn', 'rbdqn', 'ddqn'])
     parser.add_argument('--steps', type=float, default=1e5)
     parser.add_argument('--seed', type=int, default=42)
@@ -85,7 +88,11 @@ if __name__ == "__main__":
     MODEL_REGISTRY = {
             'classic': ClassicCNN,
             'nature': NatureCNN,
-            'impala': ImpalaCNN
+            'impala': ImpalaCNN,
+            'dueling_classic': DuelingClassicCNN,
+            'dueling_nature': DuelingNatureCNN,
+            'dueling_impala': DuelingImpalaCNN
+            
         }
     AGENT_REGISTRY = {
         'dqn': DQNAgent,
