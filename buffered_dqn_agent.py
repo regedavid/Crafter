@@ -29,7 +29,7 @@ class RBDQNAgent(BaseAgent):
         self.step_count = 0
         
         # How many steps to take randomly before starting backpropagation
-        self.learning_starts = 10_000 
+        self.learning_starts = self.config.learning_starts
 
     def act(self, obs, training=True):
         if training and random.random() < self.epsilon:
@@ -53,7 +53,14 @@ class RBDQNAgent(BaseAgent):
         # 2. Do not learn until the buffer has enough diverse data
         if self.buffer.size < self.learning_starts:
             return
-
+        
+        if not hasattr(self, 'env_step_count'):
+            self.env_step_count = 0
+        self.env_step_count += 1
+        
+        if self.env_step_count % self.config.train_freq != 0:
+            return
+        
         # 3. Decay epsilon only when learning has actually started
         self.epsilon = max(self.config.epsilon_min, self.epsilon * self.config.epsilon_decay)
 
