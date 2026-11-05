@@ -4,16 +4,13 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-# Assuming BaseAgent, DQNConfig, ClassicCNN, and ReplayBuffer are defined as before
-from agent import BaseAgent
-from models import ClassicCNN
-from utils import ReplayBuffer
-from config import DQNConfig
 
-class BufferedCNNAgent(BaseAgent):
-    def __init__(self, config, model, action_space, channels, obs_shape=(64, 64, 3)):
-        super().__init__(action_space)
-        self.config = config
+from agent import BaseAgent
+from utils import ReplayBuffer
+
+class RBDQNAgent(BaseAgent):
+    def __init__(self, config, model, action_space, channels, obs_space=(64, 64, 3)):
+        super().__init__(config, action_space, obs_space)
         
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
@@ -26,7 +23,7 @@ class BufferedCNNAgent(BaseAgent):
         self.optimizer = optim.Adam(self.q_net.parameters(), lr=self.config.lr)
         
         # Initialize Replay Buffer (Stores raw uint8 to save RAM)
-        self.buffer = ReplayBuffer(capacity=self.config.buffer_capacity, obs_shape=obs_shape)
+        self.buffer = ReplayBuffer(capacity=self.config.buffer_capacity, obs_space=obs_space)
         
         self.epsilon = self.config.epsilon_start
         self.step_count = 0

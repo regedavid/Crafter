@@ -11,6 +11,7 @@ import os
 
 
 from dqn_agent import DQNAgent
+from buffered_dqn_agent import RBDQNAgent
 from models import ClassicCNN
 from config import DQNConfig
 from logger import RunLogger
@@ -103,7 +104,7 @@ if __name__ == "__main__":
     logger = RunLogger(outdir=args.outdir, config=config)
     
     model = ClassicCNN
-    agent = DQNAgent(config, model, env.action_space, channels=3)
+    agent = RBDQNAgent(config, model, env.action_space, channels=3)
 
     print(f"Starting training for {args.steps} steps...")
     run_training(env, agent, args.steps, args.outdir, logger)

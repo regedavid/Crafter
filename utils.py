@@ -1,15 +1,15 @@
 import numpy as np
 
 class ReplayBuffer:
-    def __init__(self, capacity, obs_shape):
+    def __init__(self, capacity, obs_space):
         self.capacity = capacity
         self.ptr = 0
         self.size = 0
         
         # Pre-allocate numpy arrays to prevent memory fragmentation
         # Storing images as uint8 saves 4x RAM compared to float32
-        self.obs = np.zeros((capacity, *obs_shape), dtype=np.uint8)
-        self.next_obs = np.zeros((capacity, *obs_shape), dtype=np.uint8)
+        self.obs = np.zeros((capacity, *obs_space), dtype=np.uint8)
+        self.next_obs = np.zeros((capacity, *obs_space), dtype=np.uint8)
         self.actions = np.zeros(capacity, dtype=np.int64)
         self.rewards = np.zeros(capacity, dtype=np.float32)
         self.dones = np.zeros(capacity, dtype=np.bool_)

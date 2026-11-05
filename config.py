@@ -16,3 +16,6 @@ class DQNConfig:
     #replay buffer
     batch_size: int = 32
     buffer_capacity: int = 100_000
+    
+    learning_starts: int = 10_000
+    train_freq: int = 4  # <-- Add this
