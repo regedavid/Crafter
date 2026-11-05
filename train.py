@@ -13,9 +13,11 @@ import os
 from dqn_agent import DQNAgent
 from models import ClassicCNN
 from config import DQNConfig
+from logger import RunLogger
+
 warnings.filterwarnings("ignore")
 
-def run_training(env, agent, total_steps, outdir):
+def run_training(env, agent, total_steps, outdir, logger):
     obs = env.reset()
     done = False
     episode_reward = 0
@@ -44,8 +46,18 @@ def run_training(env, agent, total_steps, outdir):
         # 4. Handle episode end
         if done:
             episodes_completed += 1
-            # You can log metrics to TensorBoard or Weights & Biases here
-            progress_bar.set_postfix({'Ep': episodes_completed, 'Reward': f"{episode_reward:.1f}"})
+            logger.log_step(
+                step=step, 
+                episode=episodes_completed, 
+                reward=episode_reward, 
+                epsilon=getattr(agent, "epsilon", 1.0) # Gracefully handle non-DQN agents
+            )
+            
+            progress_bar.set_postfix({
+                'Ep': episodes_completed, 
+                'Rew': f"{episode_reward:.1f}", 
+                'Eps': f"{getattr(agent, 'epsilon', 1.0):.3f}"
+            })
             
             obs = env.reset()
             episode_reward = 0
@@ -65,7 +77,7 @@ def run_training(env, agent, total_steps, outdir):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--outdir', default='logdir/custom_run')
-    parser.add_argument('--steps', type=float, default=1e6)
+    parser.add_argument('--steps', type=float, default=1e5)
     parser.add_argument('--seed', type=int, default=42)
     args = parser.parse_args()
 
@@ -88,10 +100,12 @@ if __name__ == "__main__":
     # Initialize your chosen agent here
     # agent = YourCustomDQN(env.action_space)
     config = DQNConfig()
+    logger = RunLogger(outdir=args.outdir, config=config)
+    
     model = ClassicCNN
     agent = DQNAgent(config, model, env.action_space, channels=3)
 
     print(f"Starting training for {args.steps} steps...")
-    run_training(env, agent, args.steps, args.outdir)
+    run_training(env, agent, args.steps, args.outdir, logger)
     
     env.close()
