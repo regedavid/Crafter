@@ -82,7 +82,7 @@ if __name__ == "__main__":
     parser.add_argument('--seed', type=int, default=42)
     args = parser.parse_args()
 
-    outdir = f"logdir/{args.exp_name}_seed_{args.seed}"
+    outdir = f"logdir/{args.exp_name}/seed_{args.seed}"
     # Set seeds for reproducibility
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
