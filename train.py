@@ -25,7 +25,12 @@ def run_training(env, agent, total_steps, outdir, logger, seed):
     episodes_completed = 0
 
     # Using tqdm for a nice progress bar
-    progress_bar = tqdm.tqdm(total=total_steps, desc=f"Training Seed {seed}")
+    progress_bar = tqdm.tqdm(
+        total=total_steps, 
+        desc=f"Seed {seed}", 
+        position=seed - 1, 
+        leave=True
+    )
     process = psutil.Process(os.getpid())
     for step in range(int(total_steps)):
 
