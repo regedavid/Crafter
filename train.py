@@ -15,7 +15,7 @@ from models import ClassicCNN
 from config import DQNConfig
 warnings.filterwarnings("ignore")
 
-def run_training(env, agent, total_steps):
+def run_training(env, agent, total_steps, outdir):
     obs = env.reset()
     done = False
     episode_reward = 0
@@ -50,6 +50,9 @@ def run_training(env, agent, total_steps):
             obs = env.reset()
             episode_reward = 0
             done = False
+            
+            if episodes_completed % 50 == 0:
+                torch.save(agent.q_net.state_dict(), f"{outdir}/dqn_crafter_latest.pth")
         
         progress_bar.update(1)
 
@@ -89,6 +92,6 @@ if __name__ == "__main__":
     agent = DQNAgent(config, model, env.action_space, channels=3)
 
     print(f"Starting training for {args.steps} steps...")
-    run_training(env, agent, args.steps)
+    run_training(env, agent, args.steps, args.outdir)
     
     env.close()
