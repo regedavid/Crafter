@@ -18,6 +18,8 @@ class DQNConfig:
     target_update_freq: int = 1000
     batch_size: int = 32
     train_freq: int = 4
+    
+    n_step: int = 3
 
     def __post_init__(self):
         # 2% of total steps (Min 1k, Max 10k)

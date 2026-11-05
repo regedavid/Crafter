@@ -11,8 +11,7 @@ import os
 
 
 from dqn_agent import DQNAgent
-from buffered_dqn_agent import RBDQNAgent
-from ddqn_agent import DDQNAgent
+from buffered_dqn_agent import RBDQNAgent, RBDDQNAgent
 from models import ClassicCNN, DuelingImpalaCNN, DuelingNatureCNN, NatureCNN, ImpalaCNN, DuelingClassicCNN
 from config import DQNConfig
 from logger import RunLogger
@@ -28,9 +27,7 @@ def run_training(env, agent, total_steps, outdir, logger, seed):
     # Using tqdm for a nice progress bar
     progress_bar = tqdm.tqdm(
         total=total_steps, 
-        desc=f"Seed {seed}", 
-        position=seed - 1, 
-        leave=True
+        desc=f"Seed {seed}"
     )
     process = psutil.Process(os.getpid())
     for step in range(int(total_steps)):
@@ -96,7 +93,7 @@ if __name__ == "__main__":
         }
     AGENT_REGISTRY = {
         'dqn': DQNAgent,
-        'ddqn': DDQNAgent,
+        'ddqn': RBDDQNAgent,
         'rbdqn': RBDQNAgent
     }
         

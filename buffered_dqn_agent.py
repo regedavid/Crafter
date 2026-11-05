@@ -31,6 +31,10 @@ class RBDQNAgent(BaseAgent):
         # How many steps to take randomly before starting backpropagation
         self.learning_starts = self.config.learning_starts
 
+    def _compute_next_q(self, t_next_obs):
+        """Standard DQN: target_net both selects and evaluates."""
+        return self.target_net(t_next_obs).max(1, keepdim=True)[0]
+    
     def act(self, obs, training=True):
         if training and random.random() < self.epsilon:
             return self.action_space.sample()
@@ -82,8 +86,8 @@ class RBDQNAgent(BaseAgent):
 
         # 7. Calculate Target Q
         with torch.no_grad():
-            max_next_q = self.target_net(t_next_obs).max(1, keepdim=True)[0]
-            target_q = t_rew + self.config.gamma * max_next_q * (1.0 - t_done)
+            next_q = self._compute_next_q(t_next_obs)
+            target_q = t_rew + self.config.gamma * next_q * (1.0 - t_done)
 
         # 8. Optimize
         loss = nn.SmoothL1Loss()(current_q, target_q)
@@ -97,3 +101,10 @@ class RBDQNAgent(BaseAgent):
         self.step_count += 1
         if self.step_count % self.config.target_update_freq == 0:
             self.target_net.load_state_dict(self.q_net.state_dict())
+            
+            
+class RBDDQNAgent(RBDQNAgent):
+    def _compute_next_q(self, t_next_obs):
+        """Double DQN: q_net selects action, target_net evaluates it."""
+        best_next_actions = self.q_net(t_next_obs).argmax(dim=1, keepdim=True)
+        return self.target_net(t_next_obs).gather(1, best_next_actions)
