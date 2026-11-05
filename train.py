@@ -32,26 +32,23 @@ def run_training(env, agent, total_steps, outdir, logger):
             process = psutil.Process(os.getpid())
             ram_mb = process.memory_info().rss / (1024 * 1024)
             print(f"Step {step} | Python RAM Usage: {ram_mb:.2f} MB")
-        # 1. Agent picks an action
+
         action = agent.act(obs, training=True)
 
-        # 2. Environment steps forward (Gym 0.25.2 API)
         next_obs, reward, done, info = env.step(action)
 
-        # 3. Agent learns from the transition
         agent.learn(obs, action, reward, next_obs, done)
 
         episode_reward += reward
         obs = next_obs
 
-        # 4. Handle episode end
         if done:
             episodes_completed += 1
             logger.log_step(
                 step=step, 
                 episode=episodes_completed, 
                 reward=episode_reward, 
-                epsilon=getattr(agent, "epsilon", 1.0) # Gracefully handle non-DQN agents
+                epsilon=getattr(agent, "epsilon", 1.0) 
             )
             
             progress_bar.set_postfix({
@@ -72,9 +69,7 @@ def run_training(env, agent, total_steps, outdir, logger):
     progress_bar.close()
     print("Training completed!")
 
-# ==========================================
-# 4. MAIN ENTRY POINT
-# ==========================================
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--exp_name', type=str, default='default_run', help='Name of the experiment')
@@ -83,14 +78,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     outdir = f"logdir/{args.exp_name}/seed_{args.seed}"
-    # Set seeds for reproducibility
+
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
-    # Initialize Environment
     env = gym.make('CrafterReward-v1')
     
-    # Crafter Recorder for saving stats and videos
     env = crafter.Recorder(
         env, 
         outdir,
@@ -99,9 +92,15 @@ if __name__ == "__main__":
         save_video=False
     )
 
-    # Initialize your chosen agent here
-    # agent = YourCustomDQN(env.action_space)
-    config = DQNConfig()
+    config = DQNConfig(total_steps=args.steps)
+
+    print(f"--- Config Initialized ---")
+    print(f"Total Steps:     {config.total_steps}")
+    print(f"Buffer Capacity: {config.buffer_capacity}")
+    print(f"Learning Starts: {config.learning_starts}")
+    print(f"Epsilon Decay:   {config.epsilon_decay:.6f}")
+    print(f"--------------------------")
+    
     logger = RunLogger(outdir=outdir, config=config)
     
     model = NatureCNN
