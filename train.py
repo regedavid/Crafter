@@ -12,7 +12,7 @@ import os
 
 from dqn_agent import DQNAgent
 from buffered_dqn_agent import RBDQNAgent
-from models import ClassicCNN
+from models import ClassicCNN, NatureCNN, ImpalaCNN
 from config import DQNConfig
 from logger import RunLogger
 
@@ -77,11 +77,12 @@ def run_training(env, agent, total_steps, outdir, logger):
 # ==========================================
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--outdir', default='logdir/custom_run')
+    parser.add_argument('--exp_name', type=str, default='default_run', help='Name of the experiment')
     parser.add_argument('--steps', type=float, default=1e5)
     parser.add_argument('--seed', type=int, default=42)
     args = parser.parse_args()
 
+    outdir = f"logdir/{args.exp_name}_seed_{args.seed}"
     # Set seeds for reproducibility
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -92,7 +93,7 @@ if __name__ == "__main__":
     # Crafter Recorder for saving stats and videos
     env = crafter.Recorder(
         env, 
-        args.outdir,
+        outdir,
         save_stats=True,
         save_episode=False,
         save_video=False
@@ -101,12 +102,12 @@ if __name__ == "__main__":
     # Initialize your chosen agent here
     # agent = YourCustomDQN(env.action_space)
     config = DQNConfig()
-    logger = RunLogger(outdir=args.outdir, config=config)
+    logger = RunLogger(outdir=outdir, config=config)
     
-    model = ClassicCNN
+    model = NatureCNN
     agent = RBDQNAgent(config, model, env.action_space, channels=3)
 
     print(f"Starting training for {args.steps} steps...")
-    run_training(env, agent, args.steps, args.outdir, logger)
+    run_training(env, agent, args.steps, outdir, logger)
     
     env.close()
