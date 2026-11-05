@@ -102,3 +102,6 @@ venv.bak/
 
 logdir/
 run_experiments.sh
+analysis/
+scores/
+plots/
