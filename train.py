@@ -12,6 +12,7 @@ import os
 
 from dqn_agent import DQNAgent
 from buffered_dqn_agent import RBDQNAgent
+from ddqn_agent import DDQNAgent
 from models import ClassicCNN, NatureCNN, ImpalaCNN
 from config import DQNConfig
 from logger import RunLogger
@@ -76,7 +77,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--exp_name', type=str, default='default_run', help='Name of the experiment')
     parser.add_argument('--model', type=str, default='nature', choices=['classic', 'nature', 'impala'])
-    parser.add_argument('--agent', type=str, default='dqn', choices=['dqn', 'rbdqn'])
+    parser.add_argument('--agent', type=str, default='dqn', choices=['dqn', 'rbdqn', 'ddqn'])
     parser.add_argument('--steps', type=float, default=1e5)
     parser.add_argument('--seed', type=int, default=42)
     args = parser.parse_args()
@@ -88,7 +89,7 @@ if __name__ == "__main__":
         }
     AGENT_REGISTRY = {
         'dqn': DQNAgent,
-        'double_dqn': None,
+        'ddqn': DDQNAgent,
         'rbdqn': RBDQNAgent
     }
         
