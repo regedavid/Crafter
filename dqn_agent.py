@@ -6,22 +6,21 @@ import numpy as np
 import torch.optim as optim
 import random
 
-from models import ClassicCNN
 
 class DQNAgent(BaseAgent):
     """
     A simple DQN agent.
     """
-    def __init__(self, config, model:ClassicCNN, action_space, channels, obs_space=(64, 64, 3)):
+    def __init__(self, config, model_class, action_space, channels, obs_space=(64, 64, 3)):
         super().__init__(config, action_space, obs_space)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"Online CNN Agent initialized. Using device: {self.device}")
         
-        self.q_net = model(
+        self.q_net = model_class(
             num_actions=action_space.n, 
             in_channels=channels
             ).to(self.device)
-        self.target_net = model(
+        self.target_net = model_class(
             num_actions=self.action_space.n, 
             in_channels=channels
             ).to(self.device)

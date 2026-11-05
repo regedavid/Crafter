@@ -9,14 +9,14 @@ from agent import BaseAgent
 from utils import ReplayBuffer
 
 class RBDQNAgent(BaseAgent):
-    def __init__(self, config, model, action_space, channels, obs_space=(64, 64, 3)):
+    def __init__(self, config, model_class, action_space, channels, obs_space=(64, 64, 3)):
         super().__init__(config, action_space, obs_space)
         
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
         # Networks
-        self.q_net = model(self.action_space.n, in_channels=channels).to(self.device)
-        self.target_net = model(self.action_space.n, in_channels=channels).to(self.device)
+        self.q_net = model_class(self.action_space.n, in_channels=channels).to(self.device)
+        self.target_net = model_class(self.action_space.n, in_channels=channels).to(self.device)
         self.target_net.load_state_dict(self.q_net.state_dict())
         self.target_net.eval()
         

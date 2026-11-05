@@ -70,10 +70,26 @@ def run_training(env, agent, total_steps, outdir, logger, seed):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--exp_name', type=str, default='default_run', help='Name of the experiment')
+    parser.add_argument('--model', type=str, default='nature', choices=['classic', 'nature', 'impala'])
+    parser.add_argument('--agent', type=str, default='dqn', choices=['dqn', 'rbdqn'])
     parser.add_argument('--steps', type=float, default=1e5)
     parser.add_argument('--seed', type=int, default=42)
     args = parser.parse_args()
-
+    
+    MODEL_REGISTRY = {
+            'classic': ClassicCNN,
+            'nature': NatureCNN,
+            'impala': ImpalaCNN
+        }
+    AGENT_REGISTRY = {
+        'dqn': DQNAgent,
+        'double_dqn': None,
+        'rbdqn': RBDQNAgent
+    }
+        
+    ModelClass = MODEL_REGISTRY[args.model]
+    AgentClass = AGENT_REGISTRY[args.agent]
+    
     outdir = f"logdir/{args.exp_name}/seed_{args.seed}"
 
     np.random.seed(args.seed)
@@ -100,8 +116,7 @@ if __name__ == "__main__":
     
     logger = RunLogger(outdir=outdir, config=config)
     
-    model = NatureCNN
-    agent = RBDQNAgent(config, model, env.action_space, channels=3)
+    agent = AgentClass(config, ModelClass, env.action_space, channels=3)
     print(f"Using torch {agent.device}")
 
     print(f"Starting training for {args.steps} steps...")
