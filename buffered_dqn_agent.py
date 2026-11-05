@@ -1,0 +1,95 @@
+import numpy as np
+import random
+import torch
+import torch.nn as nn
+import torch.optim as optim
+
+# Assuming BaseAgent, DQNConfig, ClassicCNN, and ReplayBuffer are defined as before
+from agent import BaseAgent
+from models import ClassicCNN
+from utils import ReplayBuffer
+from config import DQNConfig
+
+class BufferedCNNAgent(BaseAgent):
+    def __init__(self, config, model, action_space, channels, obs_shape=(64, 64, 3)):
+        super().__init__(action_space)
+        self.config = config
+        
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        
+        # Networks
+        self.q_net = model(self.action_space.n, in_channels=channels).to(self.device)
+        self.target_net = model(self.action_space.n, in_channels=channels).to(self.device)
+        self.target_net.load_state_dict(self.q_net.state_dict())
+        self.target_net.eval()
+        
+        self.optimizer = optim.Adam(self.q_net.parameters(), lr=self.config.lr)
+        
+        # Initialize Replay Buffer (Stores raw uint8 to save RAM)
+        self.buffer = ReplayBuffer(capacity=self.config.buffer_capacity, obs_shape=obs_shape)
+        
+        self.epsilon = self.config.epsilon_start
+        self.step_count = 0
+        
+        # How many steps to take randomly before starting backpropagation
+        self.learning_starts = 10_000 
+
+    def act(self, obs, training=True):
+        if training and random.random() < self.epsilon:
+            return self.action_space.sample()
+
+        with torch.no_grad():
+            # Convert single HWC image to CHW for PyTorch
+            obs_transposed = np.transpose(obs, (2, 0, 1))
+            
+            # Add batch dimension and scale
+            obs_tensor = torch.tensor(obs_transposed, dtype=torch.float32, device=self.device)
+            obs_tensor = obs_tensor.unsqueeze(0) / 255.0
+            
+            q_values = self.q_net(obs_tensor)
+            return q_values.argmax(dim=1).item()
+
+    def learn(self, obs, action, reward, next_obs, done):
+        # 1. Store the transition in the buffer
+        self.buffer.add(obs, action, reward, next_obs, done)
+
+        # 2. Do not learn until the buffer has enough diverse data
+        if self.buffer.size < self.learning_starts:
+            return
+
+        # 3. Decay epsilon only when learning has actually started
+        self.epsilon = max(self.config.epsilon_min, self.epsilon * self.config.epsilon_decay)
+
+        # 4. Sample a random batch of 32 transitions
+        b_obs, b_act, b_rew, b_next_obs, b_done = self.buffer.sample(self.config.batch_size)
+
+        # 5. Convert Batch to Tensors
+        # Numpy batch is (Batch, 64, 64, 3). Permute swaps it to (Batch, 3, 64, 64)
+        t_obs = torch.tensor(b_obs, dtype=torch.float32, device=self.device).permute(0, 3, 1, 2) / 255.0
+        t_next_obs = torch.tensor(b_next_obs, dtype=torch.float32, device=self.device).permute(0, 3, 1, 2) / 255.0
+        
+        # Unsqueeze(1) converts shape (Batch,) to (Batch, 1) for gather() compatibility
+        t_act = torch.tensor(b_act, dtype=torch.int64, device=self.device).unsqueeze(1)
+        t_rew = torch.tensor(b_rew, dtype=torch.float32, device=self.device).unsqueeze(1)
+        t_done = torch.tensor(b_done, dtype=torch.float32, device=self.device).unsqueeze(1)
+
+        # 6. Calculate Current Q
+        current_q = self.q_net(t_obs).gather(1, t_act)
+
+        # 7. Calculate Target Q
+        with torch.no_grad():
+            max_next_q = self.target_net(t_next_obs).max(1, keepdim=True)[0]
+            target_q = t_rew + self.config.gamma * max_next_q * (1.0 - t_done)
+
+        # 8. Optimize
+        loss = nn.SmoothL1Loss()(current_q, target_q)
+        
+        self.optimizer.zero_grad()
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.q_net.parameters(), max_norm=10.0)
+        self.optimizer.step()
+
+        # 9. Sync Target Network
+        self.step_count += 1
+        if self.step_count % self.config.target_update_freq == 0:
+            self.target_net.load_state_dict(self.q_net.state_dict())
