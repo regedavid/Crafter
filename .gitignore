@@ -101,3 +101,4 @@ venv.bak/
 .typeguard/
 
 logdir/
+run_experiments.sh
