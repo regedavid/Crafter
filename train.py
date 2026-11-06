@@ -80,6 +80,7 @@ if __name__ == "__main__":
     parser.add_argument('--agent', type=str, default='dqn', choices=['dqn', 'rbdqn', 'ddqn'])
     parser.add_argument('--steps', type=float, default=1e5)
     parser.add_argument('--seed', type=int, default=42)
+    parser.add_argument('--n_step', type=int, default=3, help='N-step return horizon')
     args = parser.parse_args()
     
     MODEL_REGISTRY = {
@@ -115,7 +116,7 @@ if __name__ == "__main__":
         save_video=False
     )
 
-    config = DQNConfig(total_steps=args.steps)
+    config = DQNConfig(total_steps=args.steps, n_step=args.n_step)
 
     print(f"--- Config Initialized ---")
     print(f"Total Steps:     {config.total_steps}")

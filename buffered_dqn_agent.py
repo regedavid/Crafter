@@ -144,6 +144,7 @@ class RBDQNAgent(BaseAgent):
 
 
 class RBDDQNAgent(RBDQNAgent):
+    """Replay Buffer Double DQN Agent."""
     def _compute_next_q(self, t_next_obs):
         """Double DQN: q_net selects action, target_net evaluates it."""
         best_next_actions = self.q_net(t_next_obs).argmax(dim=1, keepdim=True)
