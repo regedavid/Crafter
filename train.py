@@ -12,7 +12,8 @@ import os
 
 from dqn_agent import DQNAgent
 from buffered_dqn_agent import RBDQNAgent, RBDDQNAgent
-from models import ClassicCNN, DuelingImpalaCNN, DuelingNatureCNN, NatureCNN, ImpalaCNN, DuelingClassicCNN
+from a2c_agent import A2CAgent
+from models import ActorCriticImpalaCNN, ActorCriticNatureCNN, ActorCriticClassicCNN, ClassicCNN, DuelingImpalaCNN, DuelingNatureCNN, NatureCNN, ImpalaCNN, DuelingClassicCNN
 from config import DQNConfig
 from logger import RunLogger
 
@@ -76,11 +77,19 @@ if __name__ == "__main__":
     parser.add_argument('--model', 
                         type=str, 
                         default='nature', 
-                        choices=['classic', 'nature', 'impala', 'dueling_classic', 'dueling_nature', 'dueling_impala'])
-    parser.add_argument('--agent', type=str, default='dqn', choices=['dqn', 'rbdqn', 'ddqn'])
+                        choices=['classic', 'nature', 'impala', 'dueling_classic', 'dueling_nature', 'dueling_impala', 'ac_classic', 'ac_nature', 'ac_impala'])
+    parser.add_argument('--agent', type=str, default='dqn', choices=['dqn', 'rbdqn', 'ddqn', 'a2c', 'ppo'])
     parser.add_argument('--steps', type=float, default=1e5)
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--n_step', type=int, default=3, help='N-step return horizon')
+    parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
+    parser.add_argument('--batch_size', type=int, default=32, help='Batch size for training')
+    parser.add_argument('--train_freq', type=int, default=4, help='Frequency of training steps')
+    parser.add_argument('--target_update_freq', type=int, default=1000, help='Frequency of target network updates')
+    parser.add_argument('--gamma', type=float, default=0.99, help='Discount factor for future rewards')
+    parser.add_argument('--rollout_steps', type=int, default=32, help='Number of steps to collect for A2C/PPO rollouts')
+    parser.add_argument('--vf_coef', type=float, default=0.5, help='Weight for Critic value loss in A2C/PPO')
+    parser.add_argument('--ent_coef', type=float, default=0.01, help='Weight for Actor entropy exploration bonus in A2C/PPO')
     args = parser.parse_args()
     
     MODEL_REGISTRY = {
@@ -89,13 +98,17 @@ if __name__ == "__main__":
             'impala': ImpalaCNN,
             'dueling_classic': DuelingClassicCNN,
             'dueling_nature': DuelingNatureCNN,
-            'dueling_impala': DuelingImpalaCNN
+            'dueling_impala': DuelingImpalaCNN,
+            'ac_classic': ActorCriticClassicCNN,
+            'ac_nature': ActorCriticNatureCNN,
+            'ac_impala': ActorCriticImpalaCNN
             
         }
     AGENT_REGISTRY = {
         'dqn': DQNAgent,
         'ddqn': RBDDQNAgent,
-        'rbdqn': RBDQNAgent
+        'rbdqn': RBDQNAgent,
+        'a2c': A2CAgent
     }
         
     ModelClass = MODEL_REGISTRY[args.model]
@@ -116,13 +129,25 @@ if __name__ == "__main__":
         save_video=False
     )
 
-    config = DQNConfig(total_steps=args.steps, n_step=args.n_step)
-
+    config = DQNConfig(
+        total_steps=args.steps, 
+        n_step=args.n_step, 
+        batch_size=args.batch_size,
+        train_freq=args.train_freq,
+        target_update_freq=args.target_update_freq,
+        gamma=args.gamma,
+        lr=args.lr,
+        rollout_steps=args.rollout_steps,
+        vf_coef=args.vf_coef,
+        ent_coef=args.ent_coef
+    )
+    
     print(f"--- Config Initialized ---")
     print(f"Total Steps:     {config.total_steps}")
     print(f"Buffer Capacity: {config.buffer_capacity}")
     print(f"Learning Starts: {config.learning_starts}")
     print(f"Epsilon Decay:   {config.epsilon_decay:.6f}")
+    print(f"Learning Rate:   {config.lr:.6f}")
     print(f"--------------------------")
     
     logger = RunLogger(outdir=outdir, config=config)

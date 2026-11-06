@@ -35,7 +35,7 @@ class DuelingHead(nn.Module):
 
 
 class ClassicCNN(nn.Module):
-    def __init__(self, num_actions, in_channels=3, dueling=False):
+    def __init__(self, num_actions, in_channels=3, dueling=False, actor_critic=False):
         super().__init__()
         
         self.features = nn.Sequential(
@@ -52,7 +52,9 @@ class ClassicCNN(nn.Module):
             nn.MaxPool2d(kernel_size=2, stride=2)
         )
         
-        if dueling:
+        if actor_critic:
+            self.fc = ActorCriticHead(64 * 8 * 8, 256, num_actions)
+        elif dueling:
             self.fc = DuelingHead(64 * 8 * 8, 256, num_actions)
         else:
             self.fc = nn.Sequential(
@@ -67,7 +69,7 @@ class ClassicCNN(nn.Module):
 
 
 class NatureCNN(nn.Module):
-    def __init__(self, num_actions, in_channels=3, dueling=False):
+    def __init__(self, num_actions, in_channels=3, dueling=False, actor_critic=False):
         super().__init__()
         
         self.features = nn.Sequential(
@@ -79,7 +81,9 @@ class NatureCNN(nn.Module):
             nn.ReLU()
         )
         
-        if dueling:
+        if actor_critic:
+            self.fc = ActorCriticHead(64 * 4 * 4, 512, num_actions)
+        elif dueling:
             self.fc = DuelingHead(64 * 4 * 4, 512, num_actions)
         else:
             self.fc = nn.Sequential(
@@ -123,7 +127,7 @@ class ImpalaBlock(nn.Module):
 
 
 class ImpalaCNN(nn.Module):
-    def __init__(self, num_actions, in_channels=3, dueling=False):
+    def __init__(self, num_actions, in_channels=3, dueling=False, actor_critic=False):
         super().__init__()
         
         self.features = nn.Sequential(
@@ -133,7 +137,9 @@ class ImpalaCNN(nn.Module):
             nn.ReLU()
         )
         
-        if dueling:
+        if actor_critic:
+            self.fc = ActorCriticHead(32 * 8 * 8, 256, num_actions)
+        elif dueling:
             self.fc = DuelingHead(32 * 8 * 8, 256, num_actions)
         else:
             self.fc = nn.Sequential(
@@ -147,7 +153,34 @@ class ImpalaCNN(nn.Module):
         return self.fc(self.features(x))
 
 
-# Convenience subclasses so you can register them directly in MODEL_REGISTRY
+class ActorCriticHead(nn.Module):
+    """Splits flattened CNN features into Actor (policy logits) and Critic V(s) streams."""
+    def __init__(self, in_features, hidden_dim, num_actions):
+        super().__init__()
+        self.flatten = nn.Flatten()
+        
+        # Actor Stream: Outputs raw action logits -> shape (Batch, num_actions)
+        self.actor_stream = nn.Sequential(
+            nn.Linear(in_features, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, num_actions)
+        )
+        
+        # Critic Stream: Estimates State Value V(s) -> shape (Batch, 1)
+        self.critic_stream = nn.Sequential(
+            nn.Linear(in_features, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, 1)
+        )
+
+    def forward(self, x):
+        x = self.flatten(x)
+        logits = self.actor_stream(x)
+        value = self.critic_stream(x)
+        return logits, value
+    
+
+
 class DuelingClassicCNN(ClassicCNN):
     def __init__(self, num_actions, in_channels=3):
         super().__init__(num_actions, in_channels=in_channels, dueling=True)
@@ -159,3 +192,15 @@ class DuelingNatureCNN(NatureCNN):
 class DuelingImpalaCNN(ImpalaCNN):
     def __init__(self, num_actions, in_channels=3):
         super().__init__(num_actions, in_channels=in_channels, dueling=True)
+        
+class ActorCriticClassicCNN(ClassicCNN):
+    def __init__(self, num_actions, in_channels=3):
+        super().__init__(num_actions, in_channels=in_channels, actor_critic=True)
+        
+class ActorCriticNatureCNN(NatureCNN):
+    def __init__(self, num_actions, in_channels=3):
+        super().__init__(num_actions, in_channels=in_channels, actor_critic=True)
+
+class ActorCriticImpalaCNN(ImpalaCNN):
+    def __init__(self, num_actions, in_channels=3):
+        super().__init__(num_actions, in_channels=in_channels, actor_critic=True)

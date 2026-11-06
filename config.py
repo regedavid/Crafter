@@ -20,6 +20,11 @@ class DQNConfig:
     train_freq: int = 4
     
     n_step: int = 3
+    
+    # A2C / PPO specific parameters
+    rollout_steps: int = 32   # Collect 32 steps per gradient update
+    vf_coef: float = 0.5      # Weight for Critic value loss
+    ent_coef: float = 0.01    # Weight for Actor entropy exploration bonus
 
     def __post_init__(self):
         # 2% of total steps (Min 1k, Max 10k)
