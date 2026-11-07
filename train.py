@@ -16,6 +16,7 @@ from a2c_agent import A2CAgent
 from models import ActorCriticImpalaCNN, ActorCriticNatureCNN, ActorCriticClassicCNN, ClassicCNN, DuelingImpalaCNN, DuelingNatureCNN, NatureCNN, ImpalaCNN, DuelingClassicCNN
 from config import DQNConfig
 from logger import RunLogger
+from ppo_agent import PPOAgent
 
 warnings.filterwarnings("ignore")
 
@@ -28,7 +29,9 @@ def run_training(env, agent, total_steps, outdir, logger, seed):
     # Using tqdm for a nice progress bar
     progress_bar = tqdm.tqdm(
         total=total_steps, 
-        desc=f"Seed {seed}"
+        desc=f"Seed {seed}",
+        position=seed - 1, 
+        leave=True
     )
     process = psutil.Process(os.getpid())
     for step in range(int(total_steps)):
@@ -81,7 +84,7 @@ if __name__ == "__main__":
     parser.add_argument('--agent', type=str, default='dqn', choices=['dqn', 'rbdqn', 'ddqn', 'a2c', 'ppo'])
     parser.add_argument('--steps', type=float, default=1e5)
     parser.add_argument('--seed', type=int, default=42)
-    parser.add_argument('--n_step', type=int, default=3, help='N-step return horizon')
+    parser.add_argument('--n_step', type=int, default=1, help='N-step return horizon')
     parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
     parser.add_argument('--batch_size', type=int, default=32, help='Batch size for training')
     parser.add_argument('--train_freq', type=int, default=4, help='Frequency of training steps')
@@ -90,6 +93,11 @@ if __name__ == "__main__":
     parser.add_argument('--rollout_steps', type=int, default=32, help='Number of steps to collect for A2C/PPO rollouts')
     parser.add_argument('--vf_coef', type=float, default=0.5, help='Weight for Critic value loss in A2C/PPO')
     parser.add_argument('--ent_coef', type=float, default=0.01, help='Weight for Actor entropy exploration bonus in A2C/PPO')
+    parser.add_argument('--ppo_rollout_steps', type=int, default=1024, help='Steps collected before each PPO update')
+    parser.add_argument('--ppo_epochs', type=int, default=4, help='Number of passes over the 1024-step rollout in PPO')
+    parser.add_argument('--ppo_batch_size', type=int, default=64, help='Mini-batch size per gradient step in PPO')
+    parser.add_argument('--clip_eps', type=float, default=0.2, help='Surrogate clipping range for PPO [0.8, 1.2]')
+    parser.add_argument('--gae_lambda', type=float, default=0.95, help='GAE smoothing factor for PPO')
     args = parser.parse_args()
     
     MODEL_REGISTRY = {
@@ -108,7 +116,8 @@ if __name__ == "__main__":
         'dqn': DQNAgent,
         'ddqn': RBDDQNAgent,
         'rbdqn': RBDQNAgent,
-        'a2c': A2CAgent
+        'a2c': A2CAgent,
+        'ppo': PPOAgent
     }
         
     ModelClass = MODEL_REGISTRY[args.model]

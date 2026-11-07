@@ -103,6 +103,8 @@ venv.bak/
 logdir/
 run_experiments.sh
 run_overnight.sh
+run_overnight2.sh
 analysis/
 scores/
 plots/
+eval/
