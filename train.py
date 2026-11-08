@@ -17,6 +17,7 @@ from models import ActorCriticImpalaCNN, ActorCriticNatureCNN, ActorCriticClassi
 from config import DQNConfig
 from logger import RunLogger
 from ppo_agent import PPOAgent
+from ppokl_agent import PPOAgent as PPOKLAgent
 
 warnings.filterwarnings("ignore")
 
@@ -29,9 +30,7 @@ def run_training(env, agent, total_steps, outdir, logger, seed):
     # Using tqdm for a nice progress bar
     progress_bar = tqdm.tqdm(
         total=total_steps, 
-        desc=f"Seed {seed}",
-        position=seed - 1, 
-        leave=True
+        desc=f"Seed {seed}"
     )
     process = psutil.Process(os.getpid())
     for step in range(int(total_steps)):
@@ -81,7 +80,7 @@ if __name__ == "__main__":
                         type=str, 
                         default='nature', 
                         choices=['classic', 'nature', 'impala', 'dueling_classic', 'dueling_nature', 'dueling_impala', 'ac_classic', 'ac_nature', 'ac_impala'])
-    parser.add_argument('--agent', type=str, default='dqn', choices=['dqn', 'rbdqn', 'ddqn', 'a2c', 'ppo'])
+    parser.add_argument('--agent', type=str, default='dqn', choices=['dqn', 'rbdqn', 'ddqn', 'a2c', 'ppo', 'ppokl'])
     parser.add_argument('--steps', type=float, default=1e5)
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--n_step', type=int, default=1, help='N-step return horizon')
@@ -98,6 +97,7 @@ if __name__ == "__main__":
     parser.add_argument('--ppo_batch_size', type=int, default=64, help='Mini-batch size per gradient step in PPO')
     parser.add_argument('--clip_eps', type=float, default=0.2, help='Surrogate clipping range for PPO [0.8, 1.2]')
     parser.add_argument('--gae_lambda', type=float, default=0.95, help='GAE smoothing factor for PPO')
+    parser.add_argument('--kl_beta', type=float, default=1.0, help='Weight for KL divergence penalty in PPO-KL')
     args = parser.parse_args()
     
     MODEL_REGISTRY = {
@@ -117,7 +117,8 @@ if __name__ == "__main__":
         'ddqn': RBDDQNAgent,
         'rbdqn': RBDQNAgent,
         'a2c': A2CAgent,
-        'ppo': PPOAgent
+        'ppo': PPOAgent,
+        'ppokl': PPOKLAgent
     }
         
     ModelClass = MODEL_REGISTRY[args.model]

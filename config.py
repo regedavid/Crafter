@@ -31,6 +31,8 @@ class DQNConfig:
     ppo_batch_size: int = 64       # Mini-batch size per gradient step (16 batches/epoch)
     clip_eps: float = 0.2          # Surrogate clipping range [0.8, 1.2]
     gae_lambda: float = 0.95       # GAE smoothing factor
+    
+    kl_beta: float = 0.01
 
     def __post_init__(self):
         # 2% of total steps (Min 1k, Max 10k)
